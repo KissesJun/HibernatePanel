@@ -93,6 +93,20 @@ def get_this_sunday_end():
     return datetime.datetime.combine(sunday, datetime.time(23, 59, 59))
 
 
+def ensure_tasks_installed():
+    """新电脑开箱即用自检：若未注册计划任务，自动静默补全注册"""
+    try:
+        res = subprocess.run(["schtasks", "/Query", "/TN", "Junmo-EveningHibernate-Hibernate"],
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                             creationflags=subprocess.CREATE_NO_WINDOW)
+        if res.returncode != 0:
+            manage_script = os.path.join(SCRIPT_DIR, "Manage-Tasks.ps1")
+            subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", manage_script, "-Action", "Install"],
+                           creationflags=subprocess.CREATE_NO_WINDOW)
+    except Exception:
+        pass
+
+
 # ================== Windows 11 原生白色亚克力毛玻璃注入 ==================
 
 class MARGINS(Structure):
@@ -247,6 +261,7 @@ class HibernateMenuWindow(QWidget):
         self.cfg = load_config()
         self.today_state = load_today()
 
+        ensure_tasks_installed()
         self.init_ui()
         self.sync_state_to_ui()
         self.init_timer()
